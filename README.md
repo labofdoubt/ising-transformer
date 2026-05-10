@@ -1,72 +1,51 @@
 # Ising Transformer
 
-From-scratch PyTorch implementation of a transformer-based autoregressive sampler for the 2D Ising model, following the recipe from *Sampling two-dimensional spin systems with transformers*:
+From-scratch PyTorch implementation of a transformer-based autoregressive sampler for the 2D Ising model, following the recipe from *Białas et al., [Sampling two-dimensional spin systems with transformers](https://arxiv.org/abs/2604.27738v1)*:
 
-- Paper: https://arxiv.org/abs/2604.27738v1
-
-The code does not depend on external transformer repos. Core pieces such as patch tokenization, causal self-attention, KV-cached generation, approximate-probability energy bias, variational free-energy training, and exact finite-size Ising validation are implemented directly in this repository.
+The code does not depend on external transformer repos.
 
 ## Overview
 
-The sampler is a decoder-only autoregressive transformer over lattice patches rather than individual spins.
+This repository implements an autoregressive transformer sampler for the two-dimensional Ising model.
 
-The workflow is:
+### Lattice Representation
 
-1. Split an `L x L` Ising lattice into non-overlapping `patch_r x patch_c` subgrids.
-2. Map each patch to an integer token.
-3. Generate patch tokens autoregressively with a transformer.
-4. Decode generated tokens back to spin lattices.
-5. Minimize the empirical variational free energy of the generated batch.
+- The lattice has size `L x L`.
+- The lattice is split into non-overlapping patches of size `r x c`.
+- Each patch is flattened and mapped to a token ID.
+- The full lattice is represented as a sequence of tokens.
 
-Validation is based on two main quantities:
+### Sample Generation
 
-- exact finite-`L` free energy of the periodic 2D Ising model
-- effective sample size (ESS)
+The transformer generates lattices autoregressively: it samples one patch at a time, and each patch is conditioned on the patches generated before it.
 
-The repository also supports AP, the approximate-probability energy bias used in the paper. AP adds a local physical bias to the logits based on internal patch bonds and already generated neighboring patches.
+### Training Objective
 
-## Repository Layout
+Training minimizes the empirical variational free energy of a batch of lattices. For each sampled lattice, this uses:
 
-```text
-tvan/
-  config.py
-  patches.py
-  lattice.py
-  physics.py
-  exact_ising.py
-  model.py
-  ap.py
-  generation.py
-  losses.py
-  checkpoint.py
-  logging_utils.py
-scripts/
-  train.py
-  validate.py
-  sample.py
-configs/
-  ising_l32_2x4.yaml
-  ising_l120_3x4_ap.yaml
-notebooks/
-  colab_training_and_inference.ipynb
-tests/
-  ...
-```
+- the model log-probability of the generated lattice,
+- the Ising energy of the lattice (periodic boundary conditions are used).
+
+### Validation
+
+Validation uses two metrics:
+
+- **Free-energy error:** compares the model’s estimated free energy with the exact finite-`L` Ising free energy.
+- **ESS:** effective sample size, following the definition used in the [paper](https://arxiv.org/abs/2604.27738v1).
+
+The repository also supports AP (approximate probability), the energy bias introduced in the paper. AP adds a local energy-based bias to the logits, using interactions within the current patch and with already generated neighboring patches.
 
 ## Colab Entry Point
 
-The main entry point for interactive experimentation is [notebooks/colab_training_and_inference.ipynb](/Users/sergeyalekseev/Desktop/ML_projects/ising_transformer/notebooks/colab_training_and_inference.ipynb).
+The main entry point for the repo is [notebooks/colab_training_and_inference.ipynb](/Users/sergeyalekseev/Desktop/ML_projects/ising_transformer/notebooks/colab_training_and_inference.ipynb).
 
-The notebook is set up to:
+The notebook shows how to:
 
 - clone the repository in Colab
-- mount Google Drive
-- create a YAML config for a run
+- create a config for a run
 - launch training
-- read saved logs and plot validation ESS and relative error versus training step
-- load a checkpoint and generate samples for downstream observables such as magnetization and susceptibility
-
-The notebook keeps the repo itself under Colab local storage and uses Google Drive paths for persistent logs and checkpoints.
+- read saved logs and plot validation ESS and relative error vs. training step
+- load a checkpoint and estimate observables such as magnetization and susceptibility from generated samples
 
 ## Configs
 
@@ -98,11 +77,6 @@ Runs are configured through a single YAML file with two sections:
 - `log_dir`, `checkpoint_dir`
 - `seed`, `grad_clip`
 
-Example configs are provided in:
-
-- [configs/ising_l32_2x4.yaml](/Users/sergeyalekseev/Desktop/ML_projects/ising_transformer/configs/ising_l32_2x4.yaml)
-- [configs/ising_l120_3x4_ap.yaml](/Users/sergeyalekseev/Desktop/ML_projects/ising_transformer/configs/ising_l120_3x4_ap.yaml)
-
 ## Local Training
 
 Run training with:
@@ -131,52 +105,3 @@ Metrics are written to:
 
 - `metrics.jsonl`
 - `metrics.csv`
-
-Checkpoints include:
-
-- model state
-- optimizer state
-- scheduler state
-- RNG states
-- serialized model and training configs
-
-## Other Scripts
-
-Validate a trained model:
-
-```bash
-python scripts/validate.py \
-  --config configs/ising_l32_2x4.yaml \
-  --checkpoint checkpoints/ising_l32_2x4/step_5000.pt \
-  --num-samples 100000
-```
-
-This generates fresh samples, recomputes teacher-forced log-probabilities, and reports free-energy metrics and ESS.
-
-Sample and save generated lattices:
-
-```bash
-python scripts/sample.py \
-  --config configs/ising_l32_2x4.yaml \
-  --checkpoint checkpoints/ising_l32_2x4/step_5000.pt \
-  --batch-size 128 \
-  --output samples_run.npz
-```
-
-## Testing
-
-Run the test suite with:
-
-```bash
-pytest -q
-```
-
-The tests cover:
-
-- patch/token roundtrips
-- lattice roundtrips
-- Ising energy conventions
-- exact finite-size free energy regression
-- causal masking
-- KV-cache consistency
-- AP boundary handling
