@@ -58,10 +58,10 @@ Runs are configured through a single YAML file with two sections:
 
 - `L`: lattice size for an `L x L` system
 - `patch_r`, `patch_c`: patch height and width
-- `hidden_dim`, `n_heads`, `n_blocks`: transformer size
-- `use_layernorm`, `use_pos_emb`
+- `beta`, `J`: inverse temperature and spin coupling constant
 - `use_ap`: whether to enable the approximate-probability bias
-- `beta`, `J`: inverse temperature and spin coupling constant.
+- `hidden_dim`, `n_heads`, `n_blocks`: transformer parameters
+- `use_layernorm`, `use_pos_emb`
 - `device`, `dtype`
 
 `train` controls optimization and output:
