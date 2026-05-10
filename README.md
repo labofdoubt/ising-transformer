@@ -33,7 +33,7 @@ Validation uses two metrics:
 - **Free-energy error:** compares the empirical free energy, computed from generated samples, with the exact finite-`L` Ising free energy.
 - **ESS:** effective sample size, following the definition used in the [paper](https://arxiv.org/abs/2604.27738v1).
 
-The repository also supports AP (approximate probability), introduced in the paper. AP adds a local energy bias to the logits, computed as the energy of the current patch and with already generated neighboring patches. It is 
+The repository also supports AP (approximate probability), introduced in the paper. AP adds a local energy bias to the logits, computed from interactions within the current patch and with already generated neighboring patches.
 
 ## Colab Entry Point
 
