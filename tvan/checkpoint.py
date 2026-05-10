@@ -9,6 +9,16 @@ import torch
 from .config import ModelConfig, TrainConfig
 
 
+def _coerce_cpu_byte_tensor(state) -> torch.Tensor:
+    if isinstance(state, torch.Tensor):
+        return state.detach().to(device="cpu", dtype=torch.uint8)
+    return torch.as_tensor(state, dtype=torch.uint8, device="cpu")
+
+
+def _coerce_cuda_rng_state_list(states) -> list[torch.Tensor]:
+    return [_coerce_cpu_byte_tensor(state) for state in states]
+
+
 def save_checkpoint(
     path: str | Path,
     model: torch.nn.Module,
@@ -56,9 +66,12 @@ def load_checkpoint(
         optimizer.load_state_dict(payload["optimizer_state_dict"])
     if scheduler is not None and payload["scheduler_state_dict"] is not None:
         scheduler.load_state_dict(payload["scheduler_state_dict"])
-    torch.set_rng_state(payload["torch_rng_state"])
-    if torch.cuda.is_available() and payload["cuda_rng_state_all"] is not None:
-        torch.cuda.set_rng_state_all(payload["cuda_rng_state_all"])
-    np.random.set_state(payload["numpy_rng_state"])
-    random.setstate(payload["python_rng_state"])
+    if "torch_rng_state" in payload and payload["torch_rng_state"] is not None:
+        torch.set_rng_state(_coerce_cpu_byte_tensor(payload["torch_rng_state"]))
+    if torch.cuda.is_available() and payload.get("cuda_rng_state_all") is not None:
+        torch.cuda.set_rng_state_all(_coerce_cuda_rng_state_list(payload["cuda_rng_state_all"]))
+    if "numpy_rng_state" in payload and payload["numpy_rng_state"] is not None:
+        np.random.set_state(payload["numpy_rng_state"])
+    if "python_rng_state" in payload and payload["python_rng_state"] is not None:
+        random.setstate(payload["python_rng_state"])
     return payload
