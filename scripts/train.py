@@ -101,6 +101,8 @@ def main() -> None:
     scheduler = build_scheduler(optimizer, train_cfg)
     ap_module = ApproximateProbabilityBias(model_cfg).to(device) if model_cfg.use_ap else None
     exact_free_energy = exact_ising_free_energy(model_cfg.L, model_cfg.beta, model_cfg.J)
+    exact_free_energy_per_spin = exact_free_energy / (model_cfg.L ** 2)
+    print(f"exact_free_energy_per_spin={exact_free_energy_per_spin:.10f}")
 
     start_step = 0
     if train_cfg.resume_checkpoint:
@@ -160,7 +162,7 @@ def main() -> None:
                 "train_free_energy": train_free_energy,
                 "train_free_energy_per_spin": train_free_energy_per_spin,
                 "train_exact_free_energy": float(exact_free_energy),
-                "train_exact_free_energy_per_spin": float(exact_free_energy / (model_cfg.L ** 2)),
+                "train_exact_free_energy_per_spin": float(exact_free_energy_per_spin),
                 "train_free_energy_rel_error": train_free_energy_rel_error,
                 "val_ess": last_val["val_ess"],
                 "val_free_energy_per_spin": last_val.get("val_free_energy_per_spin", float("nan")),
