@@ -44,7 +44,13 @@ def load_checkpoint(
     scheduler: torch.optim.lr_scheduler.LRScheduler | None = None,
     map_location: str | torch.device | None = None,
 ) -> dict:
-    payload = torch.load(path, map_location=map_location)
+    load_kwargs = {"map_location": map_location}
+    try:
+        # Our checkpoints include optimizer and RNG state, so they must be loaded
+        # with the full unpickler on PyTorch 2.6+.
+        payload = torch.load(path, weights_only=False, **load_kwargs)
+    except TypeError:
+        payload = torch.load(path, **load_kwargs)
     model.load_state_dict(payload["model_state_dict"])
     if optimizer is not None:
         optimizer.load_state_dict(payload["optimizer_state_dict"])
