@@ -6,14 +6,14 @@ The code does not depend on external transformer repos.
 
 ## Overview
 
-This repository implements an autoregressive transformer sampler for the two-dimensional Ising model.
+This repository implements an autoregressive transformer sampler for the two-dimensional Ising model (square lattice, nearest-neighbor interactions, and periodic boundary conditions).
 
 ### Lattice Representation
 
 - The lattice has size `L x L`.
 - The lattice is split into non-overlapping patches of size `r x c`.
-- Each patch is flattened and mapped to a token ID.
-- The full lattice is represented as a sequence of tokens.
+- Each patch is flattened and mapped to a token ID, based on the binary sequence of spins.
+- The full spin configuration is represented as a sequence of tokens.
 
 ### Sample Generation
 
@@ -24,16 +24,16 @@ The transformer generates lattices autoregressively: it samples one patch at a t
 Training minimizes the empirical variational free energy of a batch of lattices. For each sampled lattice, this uses:
 
 - the model log-probability of the generated lattice,
-- the Ising energy of the lattice (periodic boundary conditions are used).
+- the Ising energy of the lattice.
 
 ### Validation
 
 Validation uses two metrics:
 
-- **Free-energy error:** compares the model’s estimated free energy with the exact finite-`L` Ising free energy.
+- **Free-energy error:** compares the empirical free energy, computed from generated samples, with the exact finite-`L` Ising free energy.
 - **ESS:** effective sample size, following the definition used in the [paper](https://arxiv.org/abs/2604.27738v1).
 
-The repository also supports AP (approximate probability), the energy bias introduced in the paper. AP adds a local energy-based bias to the logits, using interactions within the current patch and with already generated neighboring patches.
+The repository also supports AP (approximate probability), introduced in the paper. AP adds a local energy bias to the logits, computed as the energy of the current patch and with already generated neighboring patches. It is 
 
 ## Colab Entry Point
 
@@ -61,7 +61,7 @@ Runs are configured through a single YAML file with two sections:
 - `hidden_dim`, `n_heads`, `n_blocks`: transformer size
 - `use_layernorm`, `use_pos_emb`
 - `use_ap`: whether to enable the approximate-probability bias
-- `beta`, `J`
+- `beta`, `J`: inverse temperature and spin coupling constant.
 - `device`, `dtype`
 
 `train` controls optimization and output:
