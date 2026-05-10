@@ -550,7 +550,7 @@ E(s) =
 
 But keep Ising scalar `J=1` as the primary target.
 
-## 9. Exact finite periodic Ising free energy
+## 9. Exact finite periodic Ising free energy (I think this formula is wrong – I had to fix it later in code)
 
 Implement `exact_ising.py` in float64.
 
