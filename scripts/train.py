@@ -66,15 +66,19 @@ def run_validation(
     energy = ising_energy(spins, J=model_cfg.J)
     Fq = free_energy_estimate(log_q, energy, model_cfg.beta)
     ess = effective_sample_size(log_q, energy, model_cfg.beta)
+    free_energy = float(Fq.item())
+    free_energy_per_spin = free_energy / (model_cfg.L ** 2)
+    exact_free_energy_per_spin = exact_free_energy / (model_cfg.L ** 2)
+    val_free_energy_per_spin_abs_error = abs(free_energy - exact_free_energy) / (model_cfg.L ** 2)
+    val_free_energy_rel_error = abs(free_energy - exact_free_energy) / abs(exact_free_energy)
     return {
         "val_ess": float(ess.item()),
-        "val_free_energy": float(Fq.item()),
-        "val_free_energy_per_spin": float((Fq / (model_cfg.L ** 2)).item()),
+        "val_free_energy": free_energy,
+        "val_free_energy_per_spin": free_energy_per_spin,
         "val_exact_free_energy": float(exact_free_energy),
-        "val_exact_free_energy_per_spin": float(exact_free_energy / (model_cfg.L ** 2)),
-        "val_free_energy_diff_per_spin": float(((Fq.item() - exact_free_energy) / (model_cfg.L ** 2))),
-        "val_free_energy_relative_diff": float((Fq.item() - exact_free_energy) / abs(exact_free_energy)),
-        "val_free_energy_relative_abs_diff": float(abs(Fq.item() - exact_free_energy) / abs(exact_free_energy)),
+        "val_exact_free_energy_per_spin": exact_free_energy_per_spin,
+        "val_free_energy_per_spin_abs_error": val_free_energy_per_spin_abs_error,
+        "val_free_energy_rel_error": val_free_energy_rel_error,
     }
 
 
@@ -108,8 +112,8 @@ def main() -> None:
     start_time = time.time()
     last_val = {
         "val_ess": float("nan"),
-        "val_free_energy_diff_per_spin": float("nan"),
-        "val_free_energy_relative_abs_diff": float("nan"),
+        "val_free_energy_per_spin_abs_error": float("nan"),
+        "val_free_energy_rel_error": float("nan"),
     }
 
     progress = trange(start_step, train_cfg.total_steps, desc="train", dynamic_ncols=True)
@@ -123,7 +127,9 @@ def main() -> None:
         spins = tokens_to_lattice(patch_tokens, model_cfg.L, model_cfg.patch_r, model_cfg.patch_c)
         energy = ising_energy(spins, J=model_cfg.J)
         surrogate_loss, Fq = score_function_surrogate(log_q, energy, model_cfg.beta)
-        train_free_energy_relative_abs_diff = abs(Fq.item() - exact_free_energy) / abs(exact_free_energy)
+        train_free_energy = float(Fq.item())
+        train_free_energy_per_spin = train_free_energy / (model_cfg.L ** 2)
+        train_free_energy_rel_error = abs(train_free_energy - exact_free_energy) / abs(exact_free_energy)
 
         optimizer.zero_grad(set_to_none=True)
         surrogate_loss.backward()
@@ -139,10 +145,11 @@ def main() -> None:
         lr = optimizer.param_groups[0]["lr"]
         progress.set_postfix(
             step=f"{step + 1}/{train_cfg.total_steps}",
-            free_energy=f"{Fq.item():.4f}",
-            train_free_energy_relative_abs_diff=f"{train_free_energy_relative_abs_diff:.3e}",
+            free_energy_per_spin=f"{train_free_energy_per_spin:.4f}",
+            train_free_energy_rel_error=f"{train_free_energy_rel_error:.3e}",
             validation_ess=f"{last_val['val_ess']:.4f}",
-            validation_free_energy_diff=f"{last_val['val_free_energy_diff_per_spin']:.3e}",
+            val_free_energy_per_spin_abs_error=f"{last_val['val_free_energy_per_spin_abs_error']:.3e}",
+            val_free_energy_rel_error=f"{last_val['val_free_energy_rel_error']:.3e}",
             lr=f"{lr:.3e}",
         )
 
@@ -150,15 +157,16 @@ def main() -> None:
             record = {
                 "step": step + 1,
                 "lr": lr,
-                "train_free_energy": float(Fq.item()),
-                "train_free_energy_per_spin": float(Fq.item() / (model_cfg.L ** 2)),
+                "train_free_energy": train_free_energy,
+                "train_free_energy_per_spin": train_free_energy_per_spin,
                 "train_exact_free_energy": float(exact_free_energy),
                 "train_exact_free_energy_per_spin": float(exact_free_energy / (model_cfg.L ** 2)),
-                "train_free_energy_relative_abs_diff": float(train_free_energy_relative_abs_diff),
+                "train_free_energy_rel_error": train_free_energy_rel_error,
                 "val_ess": last_val["val_ess"],
-                "val_free_energy_diff_per_spin": last_val["val_free_energy_diff_per_spin"],
-                "val_free_energy_relative_diff": last_val.get("val_free_energy_relative_diff", float("nan")),
-                "val_free_energy_relative_abs_diff": last_val.get("val_free_energy_relative_abs_diff", float("nan")),
+                "val_free_energy_per_spin": last_val.get("val_free_energy_per_spin", float("nan")),
+                "val_exact_free_energy_per_spin": last_val.get("val_exact_free_energy_per_spin", float("nan")),
+                "val_free_energy_per_spin_abs_error": last_val["val_free_energy_per_spin_abs_error"],
+                "val_free_energy_rel_error": last_val["val_free_energy_rel_error"],
                 "time_sec": time.time() - start_time,
             }
             append_jsonl(log_dir / "metrics.jsonl", record)
