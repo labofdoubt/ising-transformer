@@ -54,7 +54,7 @@ Runs are configured through a single YAML file with two sections:
 - `model`
 - `train`
 
-`model` controls the lattice and transformer:
+`model` controls the lattice and transformer, including:
 
 - `L`: lattice size for an `L x L` system
 - `patch_r`, `patch_c`: patch height and width
@@ -62,20 +62,13 @@ Runs are configured through a single YAML file with two sections:
 - `use_ap`: whether to enable the approximate-probability bias
 - `hidden_dim`, `n_heads`, `n_blocks`: transformer parameters
 - `use_layernorm`, `use_pos_emb`
-- `device`, `dtype`
 
-`train` controls optimization and output:
+`train` controls optimization and output, including:
 
 - `batch_size`, `val_batch_size`
 - `learning_rate`, `adam_betas`, `weight_decay`
 - `total_steps`
-- `use_cosine_scheduler`
-- `validate_every_n`
-- `save_logs_every_n`
-- `save_checkpoint_every_n`
-- `resume_checkpoint`
 - `log_dir`, `checkpoint_dir`
-- `seed`, `grad_clip`
 
 ## Local Training
 
