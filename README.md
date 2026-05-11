@@ -105,3 +105,19 @@ Metrics are written to:
 
 - `metrics.jsonl`
 - `metrics.csv`
+
+## Test Run
+
+A small reference run is shown in [test_run_metrics_N=24.pdf](/Users/sergeyalekseev/Desktop/ML_projects/ising_transformer/test_run_metrics_N=24.pdf).
+
+This figure shows training on an `L=24` lattice using a Google Colab T4 GPU for a few hours.
+
+Run details:
+
+- 1-block transformer
+- patch size `3 x 4`
+- `hidden_dim = 128`
+- `batch_size = 1024`
+- `learning_rate = 5e-4`
+- no AP
+- `beta = 0.4406867`, i.e. the critical inverse temperature of the infinite 2D Ising lattice
