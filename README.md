@@ -108,7 +108,11 @@ Metrics are written to:
 
 ## Test Run
 
-A small reference run is shown in [test_run_metrics_N=24.pdf](/Users/sergeyalekseev/Desktop/ML_projects/ising_transformer/test_run_metrics_N=24.pdf).
+A small reference run is shown below.
+
+![Test run metrics](test_run_metrics_N=24.svg)
+
+Full-resolution PDF: [test_run_metrics_N=24.pdf](/Users/sergeyalekseev/Desktop/ML_projects/ising_transformer/test_run_metrics_N=24.pdf).
 
 This figure shows training on an `L=24` lattice using a Google Colab T4 GPU for a few hours.
 
